@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>懒加载瀑布流</title>
+		<style type="text/css">
+		li{
+			list-style: none;
+		}
+		.content{
+			position: relative;
+			width: 980px;
+			margin:0 auto;
+		}
+		.item{
+			position: absolute;
+			width: 320px;
+			margin-right: 10px;
+			margin-top: 10px;
+			border:1px solid #ccc;
+		}
+		.item a{
+			margin:5px;
+			width:310px;
+			display: block;
+		}
+		.item a > img{
+			width:100%;
+		}
+		.item h3{
+			border-bottom: 1px solid #ccc;
+			height:30px;
+			line-height: 30px;
+			margin:5px;
+		}
+		.item p{
+			margin:5px;
+			color:#ccc;
+		}
+		.hide{
+			display: none;
+		}
+		</style>
+<script src="http://apps.bdimg.com/libs/jquery/1.9.1/jquery.min.js"></script>
+</head>
+<body>
+<ul class="content">
+	<li class="item hide"></li>
+</ul>
+<div id="load"></div>
+<script>
+var curpage = 1;
+var perPageCount = 10;
+var itemArr = [];
+var colLength = parseInt($('.content').width()/$('.item').width())
+var clock
+for(var i = 0; i < colLength; i++){
+		itemArr[i] = 0;
+	}
+var clock
+start()
+
+function start(){
+		getData(function(data){
+		$.each(data,function(idx,news){
+			var $node = getNode(news)
+			$node.find('img').load(function(){
+				$('.content').append($node)
+				fallFlow($node)
+			})
+		})
+	})
+}
+
+$(window).scroll(function(newsList){
+	if(clock){
+		clearTimeout(clock)
+	}
+	clock = setTimeout(function(){
+	if(isVisible($('#load'))){
+		start()
+	}
+	},200)
+})
+
+function getData(callback){
+	$.ajax({
+		url:'http://platform.sina.com.cn/slide/album_tech',
+		dataType : 'jsonp',
+		jsonp:"jsoncallback",
+		data:{
+			app_key : 1271687855,
+			num : perPageCount ,
+			page : curpage
+		}
+	}).done(function(ret){
+		if(ret && ret.status && ret.status.code === '0'){
+			callback(ret.data);
+			curpage++
+		}else{
+			console.log('get error data')
+		}
+	})
+}
+ 
+function getNode(data){
+	var html = ''
+	html += '<li class="item"><a href="' + data.url 
+	html += '"><img src="' + data.img_url + '"></a>'
+	html += '<h3>' + data.short_name + '</h3>'
+	html += '</li>'
+	return $(html);
+}
+
+function fallFlow($nodes){
+	$nodes.each(function(){
+		var minValue = Math.min.apply(null,itemArr)
+		var minIndex = itemArr.indexOf(minValue)
+		console.log($('.item').outerWidth(true))
+		console.log(minIndex)
+		$(this).css({
+			top : itemArr[minIndex] ,
+			left : minIndex * $('.item').outerWidth(true)
+		})
+		itemArr[minIndex] += $(this).outerHeight(true)
+		$('.content').css({height : Math.max.apply(null,itemArr)})
+		})
+}
+
+function isVisible($node){
+    var scrollTop = $(window).scrollTop()
+    var windowHeight = $(window).height()
+    var offsetTop = $node.offset().top
+    if(offsetTop < scrollTop + windowHeight && offsetTop > scrollTop){
+        return true
+    }
+    return false
+ } 
+</script>
+</body>
+</html>
